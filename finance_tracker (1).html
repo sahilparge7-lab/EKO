@@ -125,7 +125,19 @@ tr:hover td{background:var(--bg);}
 <header>
   <div class="logo">Finance<span>Tracker</span></div>
   <div class="header-actions">
-    <button class="btn btn-outline" onclick="exportToExcel()">⬇ Export Excel</button>
+  <button class="btn btn-outline" onclick="exportToExcel()">⬇ Export Excel</button>
+
+  <button class="btn btn-outline" onclick="exportBackup()">
+    💾 Backup
+  </button>
+
+  <label class="btn btn-outline" style="cursor:pointer;">
+    📂 Restore
+    <input type="file"
+           accept=".json"
+           onchange="importBackup(event)"
+           hidden>
+  </label>
   </div>
 </header>
 
@@ -719,8 +731,79 @@ function seedDemo(){
   save();
 }
 
-seedDemo();
-renderDashboard();
+// ---- AUTO SAVE BACKUP ----
+function saveData() {
+  const data = {
+    expenses: expenses,
+    accounts: accounts
+  };
+
+  localStorage.setItem('ft_expenses', JSON.stringify(expenses));
+  localStorage.setItem('ft_accounts', JSON.stringify(accounts));
+
+  // Backup inside browser
+  localStorage.setItem('finance_tracker_backup', JSON.stringify(data));
+}
+
+// Replace old save functions
+function save() {
+  saveData();
+}
+
+function saveAccounts() {
+  saveData();
+}
+
+// ---- IMPORT BACKUP ----
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+
+      expenses = data.expenses || [];
+      accounts = data.accounts || [];
+
+      localStorage.setItem('ft_expenses', JSON.stringify(expenses));
+      localStorage.setItem('ft_accounts', JSON.stringify(accounts));
+
+      alert('Backup restored successfully!');
+
+      renderDashboard();
+      renderEntries();
+      renderMonthly();
+      renderYearly();
+      renderAccountsList();
+
+    } catch(err) {
+      alert('Invalid backup file.');
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+// ---- EXPORT BACKUP ----
+function exportBackup() {
+  const data = {
+    expenses,
+    accounts
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(data, null, 2)],
+    { type: 'application/json' }
+  );
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finance_backup.json';
+  a.click();
+}
 </script>
 </body>
 </html>
